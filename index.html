@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E2703A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ごはん日記">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>ごはん日記</title>
+<style>
+:root{
+  --bg:#FBF6EF;--card:#FFFFFF;--ink:#2B2118;--sub:#8A7B6C;--line:#EADFD2;
+  --accent:#E2703A;--accent-soft:#FBE3D5;--chip:#F3E8DA;--star:#F2A93B;--danger:#C8442F;
+  --shadow:0 2px 10px rgba(80,50,20,.08);
+  --nav-h:64px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1A1612;--card:#26201B;--ink:#F3EAE0;--sub:#A8998A;--line:#3A322B;
+    --accent:#EE8450;--accent-soft:#3D2A1F;--chip:#332B24;--shadow:0 2px 10px rgba(0,0,0,.3)}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;
+  font-size:16px;line-height:1.5}
+body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
+textarea{min-height:90px;resize:vertical}
+input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+img{display:block}
+
+header.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px}
+.top h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.02em}
+.top .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top .sub{color:var(--sub);font-size:13px}
+.search{margin-top:10px;position:relative}
+.search input{padding-left:36px;border-radius:999px;background:var(--card)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--sub)}
+main{padding:0 16px;max-width:720px;margin:0 auto}
+
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:5px 12px;border-radius:999px;background:var(--chip);font-size:13px;color:var(--ink);white-space:nowrap}
+.chip.on{background:var(--accent);color:#fff}
+.tag{display:inline-block;padding:1px 8px;border-radius:999px;background:var(--chip);font-size:12px;color:var(--sub);margin:2px 4px 0 0}
+
+.day-h{margin:18px 2px 8px;font-size:14px;font-weight:700;color:var(--sub);display:flex;justify-content:space-between}
+.card{display:flex;gap:12px;background:var(--card);border-radius:16px;padding:10px;box-shadow:var(--shadow);margin-bottom:10px;width:100%;text-align:left}
+.thumb{width:84px;height:84px;border-radius:12px;object-fit:cover;flex:none;background:var(--chip);display:grid;place-items:center;font-size:32px}
+.card .body{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}
+.card .t{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .m{font-size:12px;color:var(--sub);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stars{color:var(--star);letter-spacing:1px;font-size:13px}
+.badge{font-size:11px;padding:1px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:700}
+
+.empty{text-align:center;color:var(--sub);padding:60px 20px}
+.empty .big{font-size:56px}
+
+.banner{background:var(--accent-soft);border-radius:16px;padding:12px;margin-top:12px;display:flex;gap:12px;align-items:center;width:100%;text-align:left}
+.banner img,.banner .thumb{width:56px;height:56px;border-radius:10px;object-fit:cover}
+.banner .k{font-size:12px;color:var(--accent);font-weight:700}
+
+/* nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);height:calc(var(--nav-h) + env(safe-area-inset-bottom))}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--sub)}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button.on{color:var(--accent);font-weight:700}
+nav.tabs .spacer{flex:0 0 72px}
+.fab{position:fixed;z-index:21;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 18px);
+  width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(226,112,58,.45);display:grid;place-items:center}
+.fab svg{width:30px;height:30px}
+
+/* calendar */
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin:12px 0}
+.cal-h button{width:40px;height:40px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);font-size:18px}
+.cal-h .ttl{font-weight:800;font-size:18px;text-align:center}
+.cal-h .ttl small{display:block;font-size:12px;color:var(--sub);font-weight:400}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .w{text-align:center;font-size:11px;color:var(--sub);padding:4px 0}
+.cal .w:first-child{color:var(--danger)}
+.cal .d{aspect-ratio:1;border-radius:10px;background:var(--card);position:relative;overflow:hidden;font-size:11px}
+.cal .d span{position:absolute;left:4px;top:2px;z-index:1;font-weight:700}
+.cal .d.has span{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.cal .d img{width:100%;height:100%;object-fit:cover}
+.cal .d .n{position:absolute;right:3px;bottom:2px;background:rgba(0,0,0,.55);color:#fff;border-radius:6px;padding:0 4px;font-size:10px}
+.cal .d.today{outline:2px solid var(--accent)}
+.cal .d.sel{outline:3px solid var(--ink)}
+.cal .d.blank{background:transparent}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.gcard{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);text-align:left}
+.gcard .img{aspect-ratio:1;width:100%;object-fit:cover;background:var(--chip);display:grid;place-items:center;font-size:40px}
+.gcard .p{padding:8px 10px}
+.gcard .t{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcard .m{font-size:11px;color:var(--sub)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 16px;border-radius:14px;background:var(--chip);font-weight:700}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{background:transparent;color:var(--danger)}
+.btn.block{width:100%}
+.btn svg{width:20px;height:20px}
+
+.section{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-top:14px}
+.section h3{margin:0 0 8px;font-size:15px}
+.section p{margin:6px 0;color:var(--sub);font-size:14px}
+.section ol{margin:6px 0;padding-left:20px;font-size:14px}
+
+/* sheets */
+.layer{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;transform:translateY(100%);transition:transform .25s ease;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 24px);-webkit-overflow-scrolling:touch}
+.layer.open{transform:none}
+.sheet-h{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.sheet-h .ttl{font-weight:800}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card);box-shadow:var(--shadow)}
+.icon-btn svg{width:22px;height:22px}
+.sheet-b{padding:4px 16px;max-width:720px;margin:0 auto}
+.field{margin:14px 0}
+.field>label,.lbl{display:block;font-size:13px;font-weight:700;color:var(--sub);margin-bottom:6px}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:3px;gap:2px}
+.seg button{flex:1;padding:8px 0;border-radius:10px;font-size:14px}
+.seg button.on{background:var(--card);box-shadow:var(--shadow);font-weight:700;color:var(--accent)}
+.photos{display:flex;gap:8px;overflow-x:auto;padding:2px 0}
+.ph{position:relative;flex:none;width:96px;height:96px;border-radius:12px;overflow:hidden;background:var(--chip)}
+.ph img{width:100%;height:100%;object-fit:cover}
+.ph .x{position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:24px;text-align:center}
+.ph .cover{position:absolute;left:4px;bottom:4px;font-size:10px;background:var(--accent);color:#fff;border-radius:6px;padding:0 5px}
+.addph{flex:none;width:96px;height:96px;border-radius:12px;border:2px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--sub);gap:2px}
+.addph svg{width:26px;height:26px}
+.rate{display:flex;gap:4px}
+.rate button{font-size:30px;color:var(--line);line-height:1}
+.rate button.on{color:var(--star)}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.sw{width:50px;height:30px;border-radius:999px;background:var(--line);position:relative;transition:.2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on{background:var(--accent)}
+.sw.on::after{left:23px}
+.sugg{margin-top:6px}
+
+/* detail */
+.hero{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:0;border-radius:18px;background:var(--chip);scrollbar-width:none}
+.hero::-webkit-scrollbar{display:none}
+.hero img{flex:none;width:100%;aspect-ratio:4/3;object-fit:cover;scroll-snap-align:center}
+.hero .none{width:100%;aspect-ratio:4/3;display:grid;place-items:center;font-size:70px}
+.dots{display:flex;justify-content:center;gap:5px;margin-top:6px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--accent)}
+.d-title{font-size:24px;font-weight:800;margin:12px 0 2px}
+.d-meta{color:var(--sub);font-size:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.d-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:14px 0}
+.d-actions .btn{flex-direction:column;gap:2px;font-size:12px;padding:10px 4px}
+.memo{white-space:pre-wrap;background:var(--card);border-radius:14px;padding:12px;box-shadow:var(--shadow)}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rgrid img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--chip)}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hist button{display:flex;justify-content:space-between;background:var(--card);padding:10px 12px;border-radius:12px;font-size:14px}
+a.link{color:var(--accent);word-break:break-all}
+
+/* lightbox */
+#lb{background:#000;z-index:60;display:flex;flex-direction:column}
+#lb .lb-h{position:sticky;top:0;display:flex;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;z-index:2}
+#lb .lb-h .icon-btn{background:rgba(255,255,255,.15);color:#fff;box-shadow:none}
+#lb .lb-b{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom}
+#lb img{max-width:100%;max-height:calc(100vh - 80px);object-fit:contain}
+#lb img.zoom{max-width:none;max-height:none;width:220%}
+#lb .cnt{color:#fff;align-self:center;font-size:14px}
+
+/* 材料・手順 */
+.ing{list-style:none;padding:0;margin:0}
+.ing li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);break-inside:avoid}
+.ing li span:last-child{color:var(--sub);text-align:right;flex:none;max-width:50%}
+.steps-l{padding:0;margin:0;list-style:none;counter-reset:s}
+.steps-l li{counter-increment:s;display:flex;gap:10px;padding:8px 0}
+.steps-l li::before{content:counter(s);flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.boxed{background:var(--card);border-radius:14px;padding:6px 12px;box-shadow:var(--shadow)}
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+
+/* 調理モード */
+#cook{z-index:55;display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+.cook-h{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 8px) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left))}
+.cook-h .ttl{flex:1;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cook-h .cnt{color:var(--sub);font-variant-numeric:tabular-nums;font-weight:700}
+.cook-bar{height:4px;background:var(--line);flex:none}
+.cook-bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.cook-pages{flex:1;min-height:0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.cook-pages::-webkit-scrollbar{display:none}
+.cook-page{flex:none;width:100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;gap:24px;
+  padding:12px max(24px,env(safe-area-inset-right)) 12px max(24px,env(safe-area-inset-left))}
+.cook-main{flex:1;min-width:0;overflow-y:auto;display:flex;flex-direction:column}
+.cook-main>.mid{margin:auto 0}
+.cook-no{font-size:15px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.cook-text{font-size:clamp(24px,7vmin,46px);font-weight:700;line-height:1.55}
+.cook-side{display:none;flex:0 0 32%;border-left:1px solid var(--line);padding-left:20px;overflow-y:auto;font-size:14px}
+@media (orientation:landscape){.cook-side{display:block}.cook-ing{columns:2;column-gap:32px}}
+.cook-nav{flex:none;display:flex;gap:10px;padding:8px max(12px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 10px) max(12px,env(safe-area-inset-left))}
+.cook-nav .btn{flex:1;padding:10px}
+.cook-nav .btn:disabled{opacity:.35}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 90px);transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:999px;font-size:14px;z-index:100;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.busy{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.3);display:none;place-items:center;color:#fff;font-weight:700}
+.busy.show{display:grid}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="top" id="top"></header>
+<main id="main"></main>
+
+<button class="fab" id="fab" aria-label="記録を追加">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+<nav class="tabs" id="tabs">
+  <button data-tab="list" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>記録</button>
+  <button data-tab="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>カレンダー</button>
+  <span class="spacer"></span>
+  <button data-tab="fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>お気に入り</button>
+  <button data-tab="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
+</nav>
+
+<div class="layer" id="sheet"></div>
+<div class="layer" id="cook"></div>
+<div class="layer" id="lb"></div>
+<div class="toast" id="toast"></div>
+<div class="busy" id="busy">写真を処理中…</div>
+
+<input type="file" id="fileCam" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="fileLib" accept="image/*" multiple class="hidden">
+<input type="file" id="fileImport" accept="application/json,.json" class="hidden">
+
+<script>
+'use strict';
+/* ========== util ========== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const W = '日月火水木金土';
+const MEALS = ['朝食', '昼食', '夕食', 'おやつ', 'その他'];
+const MEAL_ICON = {'朝食':'🌅','昼食':'☀️','夕食':'🌙','おやつ':'🍰','その他':'🍽'};
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const fmtDate = (s, withYear) => { const d = parse(s); const y = (withYear || d.getFullYear() !== new Date().getFullYear()) ? `${d.getFullYear()}年` : ''; return `${y}${d.getMonth()+1}月${d.getDate()}日(${W[d.getDay()]})`; };
+const stars = n => n ? '★'.repeat(n) + '☆'.repeat(5-n) : '';
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const urlCache = new WeakMap();
+const src = b => { if (!b) return ''; let u = urlCache.get(b); if (!u) { u = URL.createObjectURL(b); urlCache.set(b, u); } return u; };
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000); }
+const busy = (on, msg) => { const b = $('#busy'); b.textContent = msg || '写真を処理中…'; b.classList.toggle('show', on); };
+const lines = s => (s || '').split('\n').map(x => x.trim()).filter(Boolean);
+const stepLines = s => lines(s).map(x => x.replace(/^(\d+\s*[.)、．：:]|[(（]\d+[)）]|[①-⑳])\s*/, '')).filter(Boolean);
+const ingHTML = (m, cls = '') => `<ul class="ing ${cls}">${lines(m.ingredients).map(l => { const k = l.match(/^(.*?)[\s　]+(\S.*)$/); return `<li><span>${esc(k ? k[1] : l)}</span><span>${esc(k ? k[2] : '')}</span></li>`; }).join('')}</ul>`;
+const ICON = {
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  cam: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  img: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  again: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+  heartO: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  dice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="15" r="1" fill="currentColor"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7zM19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9z"/></svg>',
+  zoom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v6M8 11h6"/></svg>',
+};
+
+/* ========== DB (IndexedDB: 写真もBlobのまま端末内に保存) ========== */
+const DB_NAME = 'gohan-nikki', STORE = 'meals';
+let db, meals = [];
+const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => { const s = r.result.createObjectStore(STORE, { keyPath: 'id' }); s.createIndex('date', 'date'); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+const store = mode => db.transaction(STORE, mode).objectStore(STORE);
+const sortMeals = () => meals.sort((a, b) => b.date.localeCompare(a.date) || MEALS.indexOf(b.meal) - MEALS.indexOf(a.meal) || b.createdAt - a.createdAt);
+async function loadAll() { meals = await reqP(store('readonly').getAll()); sortMeals(); }
+async function putMeal(m) { await reqP(store('readwrite').put(m)); const i = meals.findIndex(x => x.id === m.id); if (i >= 0) meals[i] = m; else meals.push(m); sortMeals(); }
+async function delMeal(id) { await reqP(store('readwrite').delete(id)); meals = meals.filter(m => m.id !== id); }
+const allTags = () => { const c = {}; meals.forEach(m => (m.tags || []).forEach(t => c[t] = (c[t] || 0) + 1)); return Object.keys(c).sort((a, b) => c[b] - c[a]); };
+const sameDish = m => meals.filter(x => x.title.trim() && x.title.trim() === m.title.trim());
+
+/* ========== 画像圧縮（容量節約: 長辺1600px JPEG） ========== */
+function compress(file, max = 1600, q = 0.82) {
+  return new Promise(resolve => {
+    const u = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      let { naturalWidth: w, naturalHeight: h } = img; const s = Math.min(1, max / Math.max(w, h));
+      w = Math.round(w * s); h = Math.round(h * s);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h); URL.revokeObjectURL(u);
+      c.toBlob(b => resolve(b || file), 'image/jpeg', q);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); resolve(file); };
+    img.src = u;
+  });
+}
+let pickTarget = null;
+function pickPhotos(kind, camera) { pickTarget = kind; const el = camera ? $('#fileCam') : $('#fileLib'); el.value = ''; el.click(); }
+async function onFiles(e) {
+  const files = [...e.target.files]; if (!files.length || !draft) return;
+  busy(true);
+  try { for (const f of files) draft[pickTarget].push(await compress(f)); }
+  finally { busy(false); }
+  renderPhotoRow(pickTarget);
+}
+$('#fileCam').addEventListener('change', onFiles);
+$('#fileLib').addEventListener('change', onFiles);
+
+/* ========== レイヤー（戻るボタンで閉じる） ========== */
+const layers = [];
+function openLayer(el) { if (layers.includes(el)) return; layers.push(el); el.classList.add('open'); history.pushState({ layer: layers.length }, ''); }
+function closeLayer() { if (layers.length) history.back(); }
+window.addEventListener('popstate', () => {
+  const el = layers.pop(); if (!el) return;
+  el.classList.remove('open');
+  if (el.id === 'cook') { releaseWake(); window.removeEventListener('resize', el._onResize); el.innerHTML = ''; }
+  if (el.id === 'sheet') { draft = null; setTimeout(() => { if (!layers.includes(el)) el.innerHTML = ''; }, 300); }
+});
+
+/* ========== 状態 & 画面 ========== */
+let tab = 'list', query = '', tagFilter = null, calMonth = new Date(), selDay = iso(new Date());
+calMonth.setDate(1);
+
+function render() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  ({ list: renderList, cal: renderCal, fav: renderFav, set: renderSet })[tab]();
+}
+
+function cardHTML(m) {
+  const cover = m.dishPhotos[0] || m.recipePhotos[0];
+  return `<button class="card" data-open="${m.id}">
+    ${cover ? `<img class="thumb" src="${src(cover)}" alt="" loading="lazy">` : `<div class="thumb">🍳</div>`}
+    <div class="body">
+      <div class="t">${m.fav ? '<span style="color:var(--accent)">♥</span> ' : ''}${esc(m.title || '（無題）')}</div>
+      <div class="m"><span>${MEAL_ICON[m.meal] || ''} ${esc(m.meal)}</span>${m.rating ? `<span class="stars">${stars(m.rating)}</span>` : ''}${m.recipePhotos.length ? '<span class="badge">レシピ</span>' : ''}</div>
+      <div>${(m.tags || []).slice(0, 3).map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>
+    </div></button>`;
+}
+
+function renderList() {
+  const tags = allTags();
+  $('#top').innerHTML = `<div class="row"><div><h1>ごはん日記</h1><div class="sub">${meals.length ? `これまでに ${meals.length} 品` : '毎日のごはんを残そう'}</div></div></div>
+    <div class="search">${ICON.search}<input id="q" type="search" placeholder="料理名・メモ・タグで検索" value="${esc(query)}"></div>
+    ${tags.length ? `<div class="chips"><button class="chip ${!tagFilter ? 'on' : ''}" data-tag="">すべて</button>${tags.map(t => `<button class="chip ${tagFilter === t ? 'on' : ''}" data-tag="${esc(t)}">#${esc(t)}</button>`).join('')}</div>` : ''}`;
+  const q = $('#q');
+  q.addEventListener('input', () => { query = q.value; renderListBody(); });
+  renderListBody();
+}
+function renderListBody() {
+  const q = query.trim().toLowerCase();
+  const list = meals.filter(m => (!tagFilter || (m.tags || []).includes(tagFilter)) &&
+    (!q || [m.title, m.memo, (m.tags || []).join(' ')].join(' ').toLowerCase().includes(q)));
+  let html = '';
+  if (!q && !tagFilter) {
+    // 去年の今日
+    const now = new Date(); const lastYear = iso(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()));
+    const ly = meals.find(m => m.date === lastYear);
+    if (ly) { const c = ly.dishPhotos[0]; html += `<button class="banner" data-open="${ly.id}">${c ? `<img src="${src(c)}" alt="">` : '<div class="thumb">🍳</div>'}<div><div class="k">1年前の今日</div><div style="font-weight:700">${esc(ly.title)}</div></div></button>`; }
+  }
+  if (!meals.length) {
+    html += `<div class="empty"><div class="big">🍳</div><p><b>まだ記録がありません</b></p><p>下の「＋」から、今日作った料理の写真を撮ってみましょう。</p></div>`;
+  } else if (!list.length) {
+    html += `<div class="empty"><p>見つかりませんでした</p></div>`;
+  } else {
+    let cur = '';
+    list.forEach(m => {
+      if (m.date !== cur) { cur = m.date; const n = list.filter(x => x.date === cur).length; html += `<div class="day-h"><span>${fmtDate(cur)}</span><span>${n}品</span></div>`; }
+      html += cardHTML(m);
+    });
+  }
+  $('#main').innerHTML = html;
+}
+
+function renderCal() {
+  const y = calMonth.getFullYear(), mo = calMonth.getMonth();
+  const byDate = {}; meals.forEach(m => (byDate[m.date] = byDate[m.date] || []).push(m));
+  const days = new Date(y, mo + 1, 0).getDate(), start = new Date(y, mo, 1).getDay();
+  const monthCount = meals.filter(m => m.date.startsWith(`${y}-${String(mo + 1).padStart(2, '0')}`)).length;
+  const today = iso(new Date());
+  $('#top').innerHTML = `<div class="row"><h1>カレンダー</h1></div>`;
+  let cells = [...W].map(w => `<div class="w">${w}</div>`).join('');
+  for (let i = 0; i < start; i++) cells += '<div class="d blank"></div>';
+  for (let d = 1; d <= days; d++) {
+    const k = iso(new Date(y, mo, d)); const list = byDate[k] || [];
+    const cover = list.map(m => m.dishPhotos[0]).find(Boolean);
+    cells += `<button class="d ${list.length ? 'has' : ''} ${k === today ? 'today' : ''} ${k === selDay ? 'sel' : ''}" data-day="${k}"><span>${d}</span>${cover ? `<img src="${src(cover)}" alt="" loading="lazy">` : (list.length ? '<div style="display:grid;place-items:center;height:100%;font-size:20px;background:var(--accent-soft)">🍳</div>' : '')}${list.length > 1 ? `<i class="n">${list.length}</i>` : ''}</button>`;
+  }
+  const sel = byDate[selDay] || [];
+  $('#main').innerHTML = `<div class="cal-h"><button data-mon="-1">‹</button><div class="ttl">${y}年${mo + 1}月<small>${monthCount}品つくりました</small></div><button data-mon="1">›</button></div>
+    <div class="cal">${cells}</div>
+    <div class="day-h"><span>${fmtDate(selDay)}</span><button class="chip" data-addday="${selDay}">＋この日に追加</button></div>
+    ${sel.length ? sel.map(cardHTML).join('') : '<p class="empty" style="padding:20px">記録はありません</p>'}`;
+}
+
+function renderFav() {
+  // 同じ料理名はまとめて最新を表示
+  const seen = new Set(); const favs = [];
+  meals.filter(m => m.fav).forEach(m => { const k = m.title.trim() || m.id; if (!seen.has(k)) { seen.add(k); favs.push(m); } });
+  $('#top').innerHTML = `<div class="row"><div><h1>お気に入り</h1><div class="sub">また作りたいレシピ集</div></div>
+    ${favs.length ? `<button class="btn primary" id="dice" style="padding:8px 12px">${ICON.dice}今日なに作る？</button>` : ''}</div>`;
+  $('#main').innerHTML = favs.length
+    ? `<div class="grid">${favs.map(m => { const c = m.dishPhotos[0] || m.recipePhotos[0]; const n = sameDish(m).length;
+        return `<button class="gcard" data-open="${m.id}">${c ? `<img class="img" src="${src(c)}" alt="" loading="lazy">` : '<div class="img">🍳</div>'}
+        <div class="p"><div class="t">${esc(m.title || '（無題）')}</div><div class="m">${m.rating ? `<span class="stars">${stars(m.rating)}</span> ` : ''}${n > 1 ? `${n}回作った` : fmtDate(m.date)}</div></div></button>`; }).join('')}</div>`
+    : `<div class="empty"><div class="big">♡</div><p>記録の詳細画面で ♡ を押すと<br>ここにレシピ集として並びます</p></div>`;
+  const dice = $('#dice');
+  if (dice) dice.onclick = () => { const m = favs[Math.floor(Math.random() * favs.length)]; toast(`今日は「${m.title}」はどう？`); openDetail(m.id); };
+}
+
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (tab === 'set') render(); });
+async function renderSet() {
+  $('#top').innerHTML = `<div class="row"><h1>設定</h1></div>`;
+  let usage = '';
+  try { const e = await navigator.storage?.estimate?.(); if (e) usage = `使用容量 約${(e.usage / 1048576).toFixed(1)}MB`; } catch {}
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const photoCount = meals.reduce((a, m) => a + m.dishPhotos.length + m.recipePhotos.length, 0);
+  $('#main').innerHTML = `
+    <div class="section"><h3>📊 記録</h3><p>料理 ${meals.length} 品 ／ 写真 ${photoCount} 枚 ${usage ? '／ ' + usage : ''}</p></div>
+    ${standalone ? '' : `<div class="section"><h3>📱 ホーム画面に追加</h3>
+      ${installEvt ? `<button class="btn primary block" id="install">ホーム画面に追加する</button>` : ''}
+      <p><b>iPhone（Safari）</b></p><ol><li>下の共有ボタン <b>⬆︎</b> をタップ</li><li>「ホーム画面に追加」を選ぶ</li></ol>
+      <p><b>Android（Chrome）</b></p><ol><li>右上の <b>⋮</b> メニュー</li><li>「ホーム画面に追加」または「アプリをインストール」</li></ol></div>`}
+    <div class="section"><h3>✨ AIでレシピを読み取る</h3>
+      <p>レシピ写真から材料と手順を自動で文字にする機能です。Claude（Anthropic）のAPIキーが必要で、読み取るたびに少額の利用料がかかります。使わない場合は空のままで大丈夫です。</p>
+      <p>キーはこのスマホの中にだけ保存されます。読み取りボタンを押したときだけ、レシピ写真がAnthropicに送られます。</p>
+      <input id="apiKey" type="password" autocomplete="off" placeholder="${localStorage.getItem(KEY_NAME) ? '登録済み（変更するときだけ入力）' : 'sk-ant-...'}" style="margin-top:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <button class="btn primary" id="keySave">保存</button><button class="btn" id="keyDel">削除</button></div></div>
+    <div class="section"><h3>💾 バックアップ</h3>
+      <p>記録と写真はこのスマホの中だけに保存されています。機種変更やブラウザのデータ削除に備えて、ときどきバックアップしてください。</p>
+      <div style="display:grid;gap:8px;margin-top:10px">
+        <button class="btn primary block" id="export">バックアップを書き出す</button>
+        <button class="btn block" id="import">バックアップから復元</button>
+      </div></div>
+    <div class="section"><h3>ℹ️ このアプリについて</h3><p>ごはん日記 v1.0 — データはサーバーに送られません。共有ボタンを押したときだけ、選んだアプリに写真とテキストが渡されます。</p></div>`;
+  $('#keySave').onclick = () => { const v = $('#apiKey').value.trim(); if (!v) return toast('キーを入力してください'); localStorage.setItem(KEY_NAME, v); toast('保存しました'); render(); };
+  $('#keyDel').onclick = () => { localStorage.removeItem(KEY_NAME); toast('削除しました'); render(); };
+  $('#export').onclick = exportData;
+  $('#import').onclick = () => { $('#fileImport').value = ''; $('#fileImport').click(); };
+  const ib = $('#install'); if (ib) ib.onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; render(); };
+}
+
+/* ========== 詳細 ========== */
+function openDetail(id) {
+  const m = meals.find(x => x.id === id); if (!m) return;
+  const sheet = $('#sheet');
+  const hist = sameDish(m).sort((a, b) => b.date.localeCompare(a.date));
+  sheet.innerHTML = `<div class="sheet-h"><button class="icon-btn" data-close>${ICON.back}</button><div class="ttl"></div>
+      <button class="icon-btn" id="favBtn" style="color:var(--accent)">${m.fav ? ICON.heart : ICON.heartO}</button></div>
+    <div class="sheet-b">
+      <div class="hero" id="hero">${m.dishPhotos.length ? m.dishPhotos.map((b, i) => `<img src="${src(b)}" data-lb="dish:${i}" alt="">`).join('') : '<div class="none">🍳</div>'}</div>
+      ${m.dishPhotos.length > 1 ? `<div class="dots" id="dots">${m.dishPhotos.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
+      <div class="d-title">${esc(m.title || '（無題）')}</div>
+      <div class="d-meta"><span>${fmtDate(m.date, true)}</span><span>${MEAL_ICON[m.meal] || ''} ${esc(m.meal)}</span>${m.rating ? `<span class="stars" style="font-size:16px">${stars(m.rating)}</span>` : ''}</div>
+      <div>${(m.tags || []).map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>
+      <div class="d-actions">
+        <button class="btn" id="shareBtn">${ICON.share}共有</button>
+        <button class="btn" id="againBtn">${ICON.again}また作った</button>
+        <button class="btn" id="editBtn">${ICON.edit}編集</button>
+      </div>
+      ${stepLines(m.steps).length ? `<button class="btn primary block" id="cookBtn">${ICON.book}調理モードで見る</button>` : ''}
+      ${lines(m.ingredients).length ? `<div class="field"><div class="lbl">🥕 材料</div><div class="boxed">${ingHTML(m)}</div></div>` : ''}
+      ${stepLines(m.steps).length ? `<div class="field"><div class="lbl">👩‍🍳 作り方</div><div class="boxed"><ol class="steps-l">${stepLines(m.steps).map(x => `<li><span>${esc(x)}</span></li>`).join('')}</ol></div></div>` : ''}
+      ${m.recipePhotos.length ? `<div class="field"><div class="lbl">📖 レシピ（タップで拡大）</div><div class="rgrid">${m.recipePhotos.map((b, i) => `<img src="${src(b)}" data-lb="recipe:${i}" alt="">`).join('')}</div></div>` : ''}
+      ${m.url ? `<div class="field"><div class="lbl">🔗 レシピのリンク</div><a class="link" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.url)}</a></div>` : ''}
+      ${m.memo ? `<div class="field"><div class="lbl">📝 メモ・材料・アレンジ</div><div class="memo">${esc(m.memo)}</div></div>` : ''}
+      ${hist.length > 1 ? `<div class="field"><div class="lbl">🔁 これまでに ${hist.length} 回作りました</div><div class="hist">${hist.map(h => `<button data-goto="${h.id}"><span>${fmtDate(h.date, true)}</span><span class="stars">${stars(h.rating)}</span></button>`).join('')}</div></div>` : ''}
+    </div>`;
+  openLayer(sheet);
+  sheet.scrollTop = 0;
+  const hero = $('#hero'), dots = $('#dots');
+  if (dots) hero.addEventListener('scroll', () => { const i = Math.round(hero.scrollLeft / hero.clientWidth); [...dots.children].forEach((d, j) => d.classList.toggle('on', i === j)); }, { passive: true });
+  $('#favBtn').onclick = async () => { m.fav = !m.fav; await putMeal(m); $('#favBtn').innerHTML = m.fav ? ICON.heart : ICON.heartO; toast(m.fav ? 'お気に入りに追加しました' : 'お気に入りから外しました'); render(); };
+  $('#shareBtn').onclick = () => shareMeal(m);
+  $('#editBtn').onclick = () => openEditor(m);
+  const cb = $('#cookBtn'); if (cb) cb.onclick = () => openCook(m);
+  $('#againBtn').onclick = () => openEditor({ ...m, id: null, date: iso(new Date()), dishPhotos: [], recipePhotos: [...m.recipePhotos], memo: m.memo, rating: 0 }, true);
+  sheet.querySelectorAll('[data-lb]').forEach(img => img.onclick = () => { const [k, i] = img.dataset.lb.split(':'); openLightbox(k === 'dish' ? m.dishPhotos : m.recipePhotos, +i); });
+  sheet.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => openDetail(b.dataset.goto));
+}
+
+function openLightbox(list, i) {
+  const lb = $('#lb');
+  const show = () => {
+    lb.innerHTML = `<div class="lb-h"><button class="icon-btn" data-close>${ICON.close}</button><span class="cnt">${list.length > 1 ? `${i + 1} / ${list.length}` : ''}</span><button class="icon-btn" id="zm">${ICON.zoom}</button></div>
+      <div class="lb-b" id="lbb"><img src="${src(list[i])}" alt=""></div>`;
+    const img = $('#lbb img');
+    $('#zm').onclick = () => img.classList.toggle('zoom');
+    let sx = null;
+    const b = $('#lbb');
+    b.addEventListener('touchstart', e => { sx = e.touches.length === 1 && !img.classList.contains('zoom') ? e.touches[0].clientX : null; }, { passive: true });
+    b.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 50 && list.length > 1) { i = (i + (dx < 0 ? 1 : -1) + list.length) % list.length; show(); } });
+    img.ondblclick = () => img.classList.toggle('zoom');
+  };
+  show(); openLayer(lb);
+}
+
+/* ========== 編集 ========== */
+let draft = null, draftFrom = null;
+function openEditor(m, isAgain) {
+  const isNew = !m || !m.id;
+  draft = m ? { ...m, dishPhotos: [...m.dishPhotos], recipePhotos: [...m.recipePhotos], tags: [...(m.tags || [])] }
+            : { id: null, date: selDayForNew || iso(new Date()), meal: guessMeal(), title: '', dishPhotos: [], recipePhotos: [], memo: '', tags: [], rating: 0, fav: false, url: '', ingredients: '', steps: '' };
+  selDayForNew = null;
+  draftFrom = isNew ? null : m.id;
+  const sheet = $('#sheet');
+  const tags = allTags();
+  sheet.innerHTML = `<div class="sheet-h"><button class="icon-btn" data-close>${ICON.close}</button><div class="ttl">${isAgain ? 'また作った！' : isNew ? '今日のごはん' : '記録を編集'}</div><button class="btn primary" id="save" style="padding:8px 18px">保存</button></div>
+    <div class="sheet-b">
+      <div class="field"><label>📷 完成写真</label><div class="photos" id="row-dishPhotos"></div></div>
+      <div class="field"><label for="f-title">料理名</label><input id="f-title" placeholder="例：肉じゃが" value="${esc(draft.title)}" list="dl-titles" autocomplete="off">
+        <datalist id="dl-titles">${[...new Set(meals.map(x => x.title).filter(Boolean))].map(t => `<option value="${esc(t)}">`).join('')}</datalist></div>
+      <div class="field"><label>日付・食事</label>
+        <input type="date" id="f-date" value="${draft.date}" style="margin-bottom:8px">
+        <div class="seg" id="f-meal">${MEALS.map(x => `<button data-v="${x}" class="${draft.meal === x ? 'on' : ''}">${x}</button>`).join('')}</div></div>
+      <div class="field"><label>📖 レシピの写真（本・メモ・画面など）</label><div class="photos" id="row-recipePhotos"></div></div>
+      <div class="field"><button class="btn block" id="aiRead" style="background:var(--accent-soft);color:var(--accent)">${ICON.spark}レシピ写真から材料と手順を読み取る</button>
+        <div class="hint">AIが写真の文字を読んで下の欄に入れます（設定でAPIキーの登録が必要）。手入力でも使えます。</div></div>
+      <div class="field"><label for="f-ing">🥕 材料（1行に1つ。例：じゃがいも 3個）</label><textarea id="f-ing" placeholder="じゃがいも 3個&#10;牛肉 200g">${esc(draft.ingredients || '')}</textarea></div>
+      <div class="field"><label for="f-steps">👩‍🍳 作り方（1行に1手順）</label><textarea id="f-steps" style="min-height:140px" placeholder="じゃがいもを一口大に切る&#10;鍋で牛肉を炒める">${esc(draft.steps || '')}</textarea></div>
+      <div class="field"><label>おいしさ</label><div class="rate" id="f-rate">${[1, 2, 3, 4, 5].map(n => `<button data-v="${n}" class="${draft.rating >= n ? 'on' : ''}">★</button>`).join('')}</div></div>
+      <div class="field"><label for="f-tags">タグ（スペース区切り）</label><input id="f-tags" placeholder="例：和食 時短 作り置き" value="${esc(draft.tags.join(' '))}">
+        ${tags.length ? `<div class="chips sugg" id="f-sugg">${tags.slice(0, 15).map(t => `<button class="chip" data-t="${esc(t)}">#${esc(t)}</button>`).join('')}</div>` : ''}</div>
+      <div class="field"><label for="f-url">レシピのURL（任意）</label><input id="f-url" type="url" inputmode="url" placeholder="https://" value="${esc(draft.url)}"></div>
+      <div class="field"><label for="f-memo">メモ（材料・分量・アレンジ・家族の感想など）</label><textarea id="f-memo" placeholder="例：砂糖を少し減らしたらちょうどよかった">${esc(draft.memo)}</textarea></div>
+      <div class="field"><div class="toggle"><span>♡ お気に入り（また作りたい）</span><button class="sw ${draft.fav ? 'on' : ''}" id="f-fav" aria-label="お気に入り"></button></div></div>
+      ${isNew ? '' : `<div class="field"><button class="btn danger block" id="delete">この記録を削除</button></div>`}
+    </div>`;
+  if (!layers.includes(sheet)) openLayer(sheet);
+  sheet.scrollTop = 0;
+  renderPhotoRow('dishPhotos'); renderPhotoRow('recipePhotos');
+  $('#f-meal').onclick = e => { const b = e.target.closest('button'); if (!b) return; draft.meal = b.dataset.v; [...$('#f-meal').children].forEach(x => x.classList.toggle('on', x === b)); };
+  $('#f-rate').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = +b.dataset.v; draft.rating = draft.rating === v ? 0 : v; [...$('#f-rate').children].forEach((x, i) => x.classList.toggle('on', i < draft.rating)); };
+  $('#f-fav').onclick = e => { draft.fav = !draft.fav; e.currentTarget.classList.toggle('on', draft.fav); };
+  const sugg = $('#f-sugg');
+  if (sugg) sugg.onclick = e => { const b = e.target.closest('button'); if (!b) return; const inp = $('#f-tags'); const cur = inp.value.split(/[\s,、　#]+/).filter(Boolean); if (!cur.includes(b.dataset.t)) inp.value = [...cur, b.dataset.t].join(' '); };
+  $('#save').onclick = saveDraft;
+  $('#aiRead').onclick = readRecipeAI;
+  const del = $('#delete');
+  if (del) del.onclick = async () => { if (!confirm('この記録を削除しますか？（元に戻せません）')) return; await delMeal(draft.id); toast('削除しました'); closeLayer(); render(); };
+}
+let selDayForNew = null;
+function guessMeal() { const h = new Date().getHours(); return h < 10 ? '朝食' : h < 15 ? '昼食' : h < 17 ? 'おやつ' : '夕食'; }
+
+function renderPhotoRow(kind) {
+  const row = $('#row-' + kind); if (!row || !draft) return;
+  row.innerHTML = draft[kind].map((b, i) => `<div class="ph"><img src="${src(b)}" alt="">${kind === 'dishPhotos' && i === 0 && draft[kind].length > 1 ? '<span class="cover">表紙</span>' : ''}<button class="x" data-rm="${i}" aria-label="削除">×</button></div>`).join('')
+    + `<button class="addph" data-cam>${ICON.cam}撮影</button><button class="addph" data-lib>${ICON.img}アルバム</button>`;
+  row.querySelector('[data-cam]').onclick = () => pickPhotos(kind, true);
+  row.querySelector('[data-lib]').onclick = () => pickPhotos(kind, false);
+  row.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { draft[kind].splice(+b.dataset.rm, 1); renderPhotoRow(kind); });
+  row.querySelectorAll('.ph img').forEach((img, i) => img.onclick = () => { if (i > 0 && kind === 'dishPhotos') { const [x] = draft[kind].splice(i, 1); draft[kind].unshift(x); renderPhotoRow(kind); toast('表紙にしました'); } });
+}
+
+async function saveDraft() {
+  const title = $('#f-title').value.trim();
+  if (!title && !draft.dishPhotos.length) { toast('料理名か写真を入れてください'); return; }
+  const now = Date.now();
+  const m = {
+    ...draft, id: draft.id || uid(), title, date: $('#f-date').value || iso(new Date()),
+    tags: [...new Set($('#f-tags').value.split(/[\s,、　#]+/).filter(Boolean))],
+    url: $('#f-url').value.trim(), memo: $('#f-memo').value.trim(),
+    ingredients: lines($('#f-ing').value).join('\n'), steps: lines($('#f-steps').value).join('\n'),
+    createdAt: draft.createdAt && draft.id ? draft.createdAt : now, updatedAt: now,
+  };
+  await putMeal(m);
+  toast('保存しました');
+  selDay = m.date;
+  render();
+  if (draftFrom) openDetail(m.id); else { closeLayer(); setTimeout(() => openDetail(m.id), 320); }
+}
+
+/* ========== 調理モード（横向き対応・スワイプで1手順ずつ） ========== */
+let wake = null, cooking = false;
+async function requestWake() { try { wake = await navigator.wakeLock?.request('screen'); } catch {} }
+function releaseWake() { cooking = false; try { wake?.release(); } catch {} wake = null; }
+document.addEventListener('visibilitychange', () => { if (cooking && document.visibilityState === 'visible') requestWake(); });
+function openCook(m) {
+  const steps = stepLines(m.steps), hasIng = lines(m.ingredients).length > 0;
+  const pages = [];
+  if (hasIng) pages.push(`<section class="cook-page"><div class="cook-main"><div class="cook-no">材料</div>${ingHTML(m, 'cook-ing')}</div></section>`);
+  steps.forEach((t, i) => pages.push(`<section class="cook-page"><div class="cook-main"><div class="mid"><div class="cook-no">手順 ${i + 1} / ${steps.length}</div><div class="cook-text">${esc(t)}</div></div></div>
+    ${hasIng ? `<aside class="cook-side"><div class="cook-no">材料</div>${ingHTML(m)}</aside>` : ''}</section>`));
+  pages.push(`<section class="cook-page"><div class="cook-main"><div class="mid" style="text-align:center"><div style="font-size:64px">🎉</div><div class="cook-text">できあがり！</div>
+    <p style="color:var(--sub)">写真を撮って今日の記録に残しましょう</p><button class="btn primary" id="cookDone">${ICON.cam}今日の記録にする</button></div></div></section>`);
+  const el = $('#cook');
+  el.innerHTML = `<div class="cook-h"><button class="icon-btn" data-close>${ICON.close}</button><div class="ttl">${esc(m.title || 'レシピ')}</div><span class="cnt" id="cookCnt"></span></div>
+    <div class="cook-bar"><i id="cookBar"></i></div>
+    <div class="cook-pages" id="cookPages">${pages.join('')}</div>
+    <div class="cook-nav"><button class="btn" id="cookPrev">‹ 前へ</button><button class="btn primary" id="cookNext">次へ ›</button></div>`;
+  const box = $('#cookPages'), n = pages.length;
+  let cur = 0, resizing = false;
+  const idx = () => Math.round(box.scrollLeft / box.clientWidth);
+  const go = i => { cur = Math.max(0, Math.min(n - 1, i)); box.scrollTo({ left: cur * box.clientWidth, behavior: 'smooth' }); };
+  const upd = () => { $('#cookCnt').textContent = `${cur + 1} / ${n}`; $('#cookBar').style.width = `${(cur + 1) / n * 100}%`; $('#cookPrev').disabled = cur === 0; $('#cookNext').disabled = cur === n - 1; };
+  box.addEventListener('scroll', () => { if (resizing) return; cur = idx(); upd(); }, { passive: true });
+  $('#cookPrev').onclick = () => { go(cur - 1); upd(); };
+  $('#cookNext').onclick = () => { go(cur + 1); upd(); };
+  // 画面を回転しても同じ手順のままにする
+  el._onResize = () => { resizing = true; box.scrollLeft = cur * box.clientWidth; setTimeout(() => { box.scrollLeft = cur * box.clientWidth; resizing = false; }, 150); };
+  window.addEventListener('resize', el._onResize);
+  $('#cookDone').onclick = () => { closeLayer(); setTimeout(() => openEditor({ ...m, id: null, date: iso(new Date()), dishPhotos: [], recipePhotos: [...m.recipePhotos], rating: 0 }, true), 350); };
+  openLayer(el); cooking = true; requestWake(); upd();
+}
+document.addEventListener('keydown', e => { if (!cooking) return; if (e.key === 'ArrowRight') $('#cookNext')?.click(); if (e.key === 'ArrowLeft') $('#cookPrev')?.click(); });
+
+/* ========== AIでレシピ写真を読み取る（Claude API・任意機能） ========== */
+const KEY_NAME = 'gohan-nikki-api-key';
+const RECIPE_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['title', 'ingredients', 'steps'],
+  properties: {
+    title: { type: 'string' },
+    ingredients: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name', 'amount'], properties: { name: { type: 'string' }, amount: { type: 'string' } } } },
+    steps: { type: 'array', items: { type: 'string' } },
+  },
+};
+const blobToB64 = async b => (await blobToData(b)).split(',')[1];
+async function readRecipeAI() {
+  if (!draft.recipePhotos.length) return toast('先にレシピの写真を追加してください');
+  const apiKey = localStorage.getItem(KEY_NAME);
+  if (!apiKey) return alert('この機能にはClaudeのAPIキーが必要です。\n「設定」タブの「AIでレシピを読み取る」で登録してください。\n\n登録しなくても、材料と作り方は手入力できます。');
+  if (($('#f-ing').value.trim() || $('#f-steps').value.trim()) && !confirm('いま入力されている材料と作り方を、読み取った内容で置き換えますか？')) return;
+  busy(true, 'レシピを読み取り中…');
+  let Anthropic;
+  try {
+    ({ default: Anthropic } = await import('https://esm.sh/@anthropic-ai/sdk@0.136.0'));
+  } catch { busy(false); return alert('読み取り機能を読み込めませんでした。ネットにつながっているか確認してください。'); }
+  try {
+    const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+    const images = await Promise.all(draft.recipePhotos.map(async b => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await blobToB64(b) } })));
+    const res = await client.messages.create({
+      model: 'claude-haiku-5-5', // 安さ優先。精度を上げたいときは 'claude-opus-5-5' に
+      max_tokens: 16000,
+      output_config: { format: { type: 'json_schema', schema: RECIPE_SCHEMA } },
+      messages: [{ role: 'user', content: [...images, { type: 'text', text:
+        'これは料理レシピを撮った写真です（複数枚ある場合は同じレシピの続きです）。料理名、材料（名前と分量）、作り方の手順を読み取ってください。\n' +
+        '・手順は調理中に1つずつ画面に大きく表示します。1手順に1つの作業になるよう、長い手順は分けてください。番号は付けないでください。\n' +
+        '・火加減、時間、分量など、調理に必要な情報は省かないでください。\n' +
+        '・写真に書かれている内容だけを使い、読めない部分を想像で補わないでください。分量が書かれていない材料は amount を空文字にしてください。\n' +
+        '・レシピが写っていない場合は ingredients と steps を空の配列にしてください。' }] }],
+    });
+    if (res.stop_reason === 'refusal') throw new Error('refusal');
+    if (res.stop_reason === 'max_tokens') throw new Error('too-long');
+    const r = JSON.parse(res.content.find(b => b.type === 'text').text);
+    if (!r.steps.length && !r.ingredients.length) { alert('写真からレシピを読み取れませんでした。文字がはっきり写るように撮り直してみてください。'); return; }
+    if (!draft) return;
+    if (!$('#f-title').value.trim() && r.title) $('#f-title').value = r.title;
+    $('#f-ing').value = r.ingredients.map(i => `${i.name} ${i.amount}`.trim()).join('\n');
+    $('#f-steps').value = r.steps.join('\n');
+    toast('読み取りました。内容を確認してください');
+    $('#f-ing').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (e) {
+    let msg = '読み取りに失敗しました。少し待ってからもう一度お試しください。';
+    if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) msg = 'APIキーが正しくないか、使えない状態です。設定を確認してください。';
+    else if (e instanceof Anthropic.RateLimitError) msg = '利用が集中しています。1分ほど待ってからお試しください。';
+    else if (e instanceof Anthropic.BadRequestError) msg = '写真を送れませんでした（' + e.message + '）';
+    else if (e instanceof Anthropic.APIConnectionError) msg = 'ネットにつながりませんでした。電波の状態を確認してください。';
+    else if (e.message === 'refusal') msg = 'この写真は読み取れませんでした。';
+    else if (e.message === 'too-long') msg = 'レシピが長すぎて読み取りきれませんでした。写真を減らしてお試しください。';
+    alert(msg);
+  } finally { busy(false); }
+}
+
+/* ========== 共有 ========== */
+async function shareMeal(m) {
+  const out = [`🍳 ${m.title || '今日のごはん'}`, `${fmtDate(m.date, true)} ${m.meal}`];
+  if (m.rating) out.push(stars(m.rating));
+  if (lines(m.ingredients).length) out.push('', '【材料】', ...lines(m.ingredients).map(x => '・' + x));
+  if (stepLines(m.steps).length) out.push('', '【作り方】', ...stepLines(m.steps).map((x, i) => `${i + 1}. ${x}`));
+  if (m.memo) out.push('', m.memo);
+  if (m.url) out.push('', 'レシピ: ' + m.url);
+  if (m.tags?.length) out.push('', m.tags.map(t => '#' + t).join(' '));
+  const text = out.join('\n');
+  const safe = (m.title || 'gohan').replace(/[\\/:*?"<>|\s]/g, '_');
+  const files = [
+    ...m.dishPhotos.map((b, i) => new File([b], `${safe}_完成${i + 1}.jpg`, { type: 'image/jpeg' })),
+    ...m.recipePhotos.map((b, i) => new File([b], `${safe}_レシピ${i + 1}.jpg`, { type: 'image/jpeg' })),
+  ];
+  try {
+    if (files.length && navigator.canShare?.({ files })) await navigator.share({ files, title: m.title, text });
+    else if (navigator.share) await navigator.share({ title: m.title, text });
+    else { await navigator.clipboard.writeText(text); toast('テキストをコピーしました'); }
+  } catch (e) { if (e.name !== 'AbortError') { try { await navigator.clipboard.writeText(text); toast('テキストをコピーしました'); } catch { toast('共有できませんでした'); } } }
+}
+
+/* ========== バックアップ ========== */
+const blobToData = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+async function exportData() {
+  busy(true);
+  try {
+    const out = [];
+    for (const m of meals) out.push({ ...m, dishPhotos: await Promise.all(m.dishPhotos.map(blobToData)), recipePhotos: await Promise.all(m.recipePhotos.map(blobToData)) });
+    const file = new File([JSON.stringify({ app: 'gohan-nikki', version: 1, exportedAt: new Date().toISOString(), meals: out })], `ごはん日記_${iso(new Date())}.json`, { type: 'application/json' });
+    busy(false);
+    if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: 'ごはん日記バックアップ' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } finally { busy(false); }
+}
+$('#fileImport').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  busy(true);
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.app !== 'gohan-nikki' || !Array.isArray(data.meals)) throw new Error('format');
+    const toBlob = d => fetch(d).then(r => r.blob());
+    for (const m of data.meals) await putMeal({ ...m, dishPhotos: await Promise.all(m.dishPhotos.map(toBlob)), recipePhotos: await Promise.all(m.recipePhotos.map(toBlob)) });
+    toast(`${data.meals.length}件を復元しました`); render();
+  } catch { toast('このファイルは読み込めませんでした'); }
+  finally { busy(false); }
+});
+
+/* ========== イベント ========== */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-open],[data-tab],[data-tag],[data-day],[data-mon],[data-addday],[data-close]');
+  if (!t) return;
+  if (t.dataset.close !== undefined) return closeLayer();
+  if (t.dataset.open) return openDetail(t.dataset.open);
+  if (t.dataset.tab) { tab = t.dataset.tab; window.scrollTo(0, 0); return render(); }
+  if (t.dataset.tag !== undefined) { tagFilter = t.dataset.tag || null; return renderList(); }
+  if (t.dataset.day) { selDay = t.dataset.day; return renderCal(); }
+  if (t.dataset.mon) { calMonth.setMonth(calMonth.getMonth() + +t.dataset.mon); return renderCal(); }
+  if (t.dataset.addday) { selDayForNew = t.dataset.addday; return openEditor(null); }
+});
+$('#fab').onclick = () => openEditor(null);
+
+/* ========== 起動 ========== */
+(async () => {
+  try { db = await openDB(); await loadAll(); }
+  catch { $('#main').innerHTML = '<div class="empty">このブラウザでは保存機能が使えません（プライベートモードを解除してください）</div>'; return; }
+  navigator.storage?.persist?.().catch(() => {});
+  render();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>

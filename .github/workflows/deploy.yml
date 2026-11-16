@@ -1,0 +1,37 @@
+name: GitHub Pages へ公開
+
+# main に push するたびに、自動で公開する
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 手動でも実行できるようにしておく
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 公開処理が重ならないようにする
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: 公開
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      # ビルド不要（HTMLだけのアプリ）なので、フォルダをそのまま公開する
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
